@@ -1,7 +1,6 @@
 from pyparsing import CaselessKeyword, Literal, ZeroOrMore, OneOrMore, Group, Optional, \
                         Combine, Forward, Word, FollowedBy, Suppress, QuotedString, \
                         alphas, nums, printables, dblSlashComment
-import unittest, pprint
 
 # pyparsing API at https://pythonhosted.org/pyparsing/
 # Grammar provided by http://dgrok.excastle.com/Grammar.htm
@@ -114,3 +113,13 @@ methodImplementation = methodHeading + fancyBlock + SEMICOLON
 
 grammar = OneOrMore(methodImplementation)
 grammar.ignore(dblSlashComment)
+
+def main(argv):
+    with open(argv, 'r') as f:
+        string = f.read()
+    grammar.parseString(string).pprint()
+
+
+if __name__ == "__main__":
+    import pprint, sys
+    main(sys.argv[1])
