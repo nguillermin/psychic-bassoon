@@ -1,6 +1,6 @@
 import unittest
-from sql_extract import ident, identList, Particle, Atom, statement, statementList, expression, expressionList, \
-expressionOrAssignment, assignment, withStatement, ifStatement, tryStatement, block, varSection, methodHeading
+from sql_extract import *
+
 
 class OutcomesTest(unittest.TestCase):
 
@@ -211,10 +211,16 @@ class OutcomesTest(unittest.TestCase):
             """).asList()==['var', ['sDate', 'eDate', ':', 'TDateTime', ';'], ['temp', 'b', ':', 'string', ';']])
 
 
+    def test_parameter(self):
+        self.assertTrue(parameter.parseString("const NewEntry: string").asList()==['const', 'NewEntry', ':', 'string'])
+        self.assertTrue(parameter.parseString("var NewEntry, OldEntry : string").asList()==['var', 'NewEntry', 'OldEntry', ':', 'string'])
+
+
     def test_methodHeading(self):
         self.assertTrue(methodHeading.parseString("function GetMealPlanInfo(var id, cPeriod: string; yStart, eStart: \
             TDateTime): integer;").asList()==['function', 'GetMealPlanInfo', '(', 'var', 'id', 'cPeriod', ':', 'string', ';', 'yStart', 'eStart', ':', 
             'TDateTime', ')', ':', 'integer', ';'])
+        self.assertTrue(methodHeading.parseString("procedure SaveFilterStrings(const NewEntry: string);").asList()==['procedure', 'SaveFilterStrings', '(', 'const', 'NewEntry', ':', 'string', ')', ';'])
 
 
 if __name__ == "__main__":

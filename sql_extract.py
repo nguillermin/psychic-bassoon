@@ -47,6 +47,7 @@ TRY = CaselessKeyword('try')
 FINALLY = CaselessKeyword('finally')
 EXCEPT = CaselessKeyword('except')
 ON = CaselessKeyword('on')
+NIL = CaselessKeyword('nil')
 
 ident = Word(alphas)
 identList = ident + ZeroOrMore(COMMA + ident)
@@ -64,7 +65,7 @@ parameterExpression = Forward()
 
 setLiteral = Forward()
 
-Particle = (ident | Word(nums) | QuotedString("'",unquoteResults=False,escQuote="''") |
+Particle = (ident | Word(nums) | NIL | QuotedString("'",unquoteResults=False,escQuote="''") |
             (LPAREN + expression + RPAREN) | setLiteral)
 Atom = Particle + ZeroOrMore( (PERIOD + ident) |
                     (LBRACKET + expressionList + RBRACKET) |
@@ -106,8 +107,9 @@ fancyBlock = ZeroOrMore(implementationDecl) + block
 
 methodReturnType = qualifiedIdent | QuotedString("'")
 parameterType = methodReturnType
-parameter = Optional(VAR) + identList + COLON + parameterType
-methodHeading = (FUNCTION | PROCEDURE) + qualifiedIdent + LPAREN + ZeroOrMore(parameter + ZeroOrMore(SEMICOLON + parameter)) + RPAREN + COLON + methodReturnType + SEMICOLON
+parameter = Optional(VAR | CONST) + identList + COLON + parameterType
+methodHeading = ((FUNCTION + qualifiedIdent + LPAREN + ZeroOrMore(parameter + ZeroOrMore(SEMICOLON + parameter)) + RPAREN + COLON + methodReturnType + SEMICOLON) |
+                (PROCEDURE + qualifiedIdent + LPAREN + ZeroOrMore(parameter + ZeroOrMore(SEMICOLON + parameter)) + RPAREN + SEMICOLON))
 
 methodImplementation = methodHeading + fancyBlock + SEMICOLON
 
