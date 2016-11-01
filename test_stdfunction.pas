@@ -3,29 +3,29 @@ var
   temp: string;
   word: integer;
 begin
-//  // look it up in student
-//  // with Odin.LookupQuery do
-//  // begin
-    // Close;;
-//     SQL.Clear;
-//     SQL.Add('SELECT Plan_MP,Time_MP');
-//     if Odin.UseSQL then
-//     begin
-//       SQL.Add('FROM student');
-//       ConnectionName := 'OdinSQL';
-//     end
-//     else
-//     begin
-//       SQL.Add('FROM ":Schools:STUDENT.DBF"');
-//       ConnectionName := 'Schools';
-//     end;
-//     temp := 'WHERE ID_NUMBER = ''' + id + '''';
-//     SQL.Add(temp);
-//     Prepare;
-//     Open;
-//     cPeriod := FieldByName('Time_MP').AsString;
-//     result := FieldByName('Plan_MP').AsInteger;
-//   end;
+ // look it up in student
+ // with Odin.LookupQuery do
+ begin
+    Close;;
+    SQL.Clear;
+    SQL.Add('SELECT Plan_MP,Time_MP');
+    if Odin.UseSQL then
+    begin
+      SQL.Add('FROM student');
+      ConnectionName := 'OdinSQL';
+    end
+    else
+    begin
+      SQL.Add('FROM ":Schools:STUDENT.DBF"');
+      ConnectionName := 'Schools';
+    end;
+    temp := 'WHERE ID_NUMBER = ''' + id + '''';
+    SQL.Add(temp);
+    Prepare;
+    Open;
+    cPeriod := FieldByName('Time_MP').AsString;
+    result := FieldByName('Plan_MP').AsInteger;
+  end;
 end;
 
 function GetMeals(var id, cPeriod: string; yStart, tStart, tEnd, mStart, mEnd,
@@ -34,9 +34,63 @@ var
   sDate, eDate: TDateTime;
   temp, b: string;
 begin
-//   // look it up in student
-//   // look it up in student
-//   // look it up in student
+  if (cPeriod = '') or (cPeriod = 'N') then
+  begin
+    sDate := yStart;
+    eDate := Now;
+  end
+  else if cPeriod = 'D' then
+  begin
+    sDate := Now;
+  end
+  else if cPeriod = 'W' then
+  begin
+    sDate := wStart;
+    eDate := wEnd;
+  end
+  else if cPeriod = 'M' then
+  begin
+    sDate := mStart;
+    eDate := mEnd;
+  end
+  else if cPeriod = 'T' then
+  begin
+    sDate := tStart;
+    eDate := tEnd;
+  end;
+
+  with Odin.MealsQuery do
+  begin
+    Close;;
+    SQL.Clear;
+    SQL.Add('SELECT *');
+    if Odin.UseSQL then
+    begin
+      SQL.Add('FROM meals');
+      ConnectionName := 'OdinSQL';
+    end
+    else
+    begin
+      SQL.Add('FROM ":Schools:MEALS.DBF"');
+      ConnectionName := 'Schools';
+    end;
+    temp := 'WHERE ID_NUMBER = ''' + id + '''';
+    SQL.Add(temp);
+    if cPeriod = 'D' then
+    begin
+      temp := 'AND qdate = ' + '''' + DateToStrSQL(sDate, Odin.UseSQL) + '''';
+      SQL.Add(temp);
+    end
+    else
+    begin
+      temp := 'AND qdate >= ' + '''' + DateToStrSQL(sDate, Odin.UseSQL) + '''';
+      SQL.Add(temp);
+      temp := 'AND qdate <= ' + '''' + DateToStrSQL(eDate, Odin.UseSQL) + '''';
+      SQL.Add(temp);
+    end;
+    Prepare;
+    Open;
+  end;
 end;
 
 function GetMeals(var id, cPeriod: string; yStart, tStart, tEnd, mStart, mEnd,
