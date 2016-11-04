@@ -1,6 +1,6 @@
 from pyparsing import CaselessKeyword, Literal, ZeroOrMore, OneOrMore, Group, Optional, \
                         Combine, Forward, Word, FollowedBy, Suppress, QuotedString, \
-                        alphas, nums, printables, dblSlashComment
+                        alphas, nums, printables, dblSlashComment, SkipTo
 
 # pyparsing API at https://pythonhosted.org/pyparsing/
 # Grammar provided by http://dgrok.excastle.com/Grammar.htm
@@ -48,6 +48,8 @@ FINALLY = CaselessKeyword('finally')
 EXCEPT = CaselessKeyword('except')
 ON = CaselessKeyword('on')
 NIL = CaselessKeyword('nil')
+
+braceComment = Literal('{') + SkipTo(Literal('}'))
 
 ident = Word(alphas)
 identList = ident + ZeroOrMore(COMMA + ident)
@@ -115,6 +117,7 @@ methodImplementation = methodHeading + fancyBlock + SEMICOLON
 
 grammar = OneOrMore(methodImplementation)
 grammar.ignore(dblSlashComment)
+grammar.ignore(braceComment)
 
 def main(argv):
     with open(argv, 'r') as f:

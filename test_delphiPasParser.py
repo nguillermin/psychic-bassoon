@@ -1,5 +1,5 @@
 import unittest
-from sql_extract import *
+from delphiPasParser import *
 
 
 class OutcomesTest(unittest.TestCase):
