@@ -1,4 +1,5 @@
-import delphiPasParser, delphiDfmParser
+from delphiPasParser import PasParser
+from delphiDfmParser import DfmParser
 
 def main(argv):
     with open(argv, 'r') as f:

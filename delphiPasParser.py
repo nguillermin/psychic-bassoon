@@ -119,6 +119,8 @@ grammar = OneOrMore(methodImplementation)
 grammar.ignore(dblSlashComment)
 grammar.ignore(braceComment)
 
+PasParser = grammar
+
 def main(argv):
     with open(argv, 'r') as f:
         string = f.read()

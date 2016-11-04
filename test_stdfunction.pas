@@ -140,8 +140,8 @@ begin
       ConnectionName := 'Schools';
     end;
     temp := 'WHERE ID_NUMBER = ''' + id + '''';
-    SQL.Add(temp);
-    if cPeriod = 'D' then
+    SQL.Add(temp)
+;    if cPeriod = 'D' then
     begin
       temp := 'AND qdate = ' + '''' + DateToStrSQL(sDate, Odin.UseSQL) + '''';
       SQL.Add(temp);
@@ -173,6 +173,7 @@ begin
   WorkIni := TIniFile.Create(GetWorkIniPath);
   WorkIni.ReadSectionValues('Filters', IniStrings);
   // check whether that string already exists, if it does then ignore
+  { COMMENT COMMENT COMMENT }
   for loc := 1 to 18 do
   begin
     tStr := IniStrings.Values[IntToStr(loc)];

@@ -116,6 +116,9 @@ nested_object = Forward()
 object_definition = object_declaration + object_attributes + ZeroOrMore(nested_object) + END
 nested_object << Group(object_definition)
 
+# My unique contribution ~Nils
+DfmParser = object_definition
+
 #################
 # END GRAMMAR
 #################
