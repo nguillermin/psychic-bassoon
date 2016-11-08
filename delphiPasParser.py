@@ -165,6 +165,8 @@ implementationSection = IMPLEMENTATION + Optional(usesClause) + ZeroOrMore(imple
 
 initSection = END #| block # | INITIALIZATION + statementList + FINALIZATION + statementList + END
 
+titleAndInterface = UNIT + ident + SEMICOLON + interfaceSection
+
 unit = UNIT + ident + SEMICOLON + interfaceSection + implementationSection + initSection + PERIOD
 
 grammar = unit
