@@ -1,6 +1,6 @@
 from pyparsing import CaselessKeyword, Literal, ZeroOrMore, OneOrMore, Group, Optional, \
                         Combine, Forward, Word, FollowedBy, Suppress, QuotedString, \
-                        alphas, nums, printables, dblSlashComment, SkipTo
+                        alphas, nums, alphanums, printables, dblSlashComment, SkipTo
 
 # pyparsing API at https://pythonhosted.org/pyparsing/
 # Grammar provided by http://dgrok.excastle.com/Grammar.htm
@@ -29,8 +29,8 @@ EQUALS = Literal('=')
 CONCAT = Literal('+')
 LTHAN = Literal('<')
 GTHAN = Literal('>')
-LTHANEQ = Literal('<=')
-GTHANEQ = Literal('>=')
+LTHANEQ = Combine(Literal('<') + FollowedBy('=') + Literal('='))
+GTHANEQ = Combine(Literal('>') + FollowedBy('=') + Literal('='))
 NEQUAL = Literal('<>')
 PLUS = Literal('+')
 MINUS = Literal('-')
@@ -48,15 +48,28 @@ FINALLY = CaselessKeyword('finally')
 EXCEPT = CaselessKeyword('except')
 ON = CaselessKeyword('on')
 NIL = CaselessKeyword('nil')
+UNIT = CaselessKeyword('unit')
+TYPE = CaselessKeyword('type')
+IMPLEMENTATION = CaselessKeyword('implementation')
+IN = CaselessKeyword('in')
+CLASS = CaselessKeyword('class')
+USES = CaselessKeyword('uses')
+CONTAINS = CaselessKeyword('contains')
+INTERFACE = CaselessKeyword('interface')
+PRIVATE = CaselessKeyword('private')
+PUBLIC = CaselessKeyword('public')
+PROTECTED = CaselessKeyword('protected')
+PUBLISHED = CaselessKeyword('published')
+PROPERTY = CaselessKeyword('property')
 
-braceComment = Literal('{') + SkipTo(Literal('}'))
+braceComment = Literal('{') + SkipTo(Literal('}')) + Literal('}')
 
-ident = Word(alphas)
+ident = Word(alphanums + "_")
 identList = ident + ZeroOrMore(COMMA + ident)
 qualifiedIdent = ident + ZeroOrMore(PERIOD + ident)
-_type = ident
+_type = Forward()
 retval = ident
-RelOp = EQUALS | LTHAN | GTHAN | LTHANEQ | GTHANEQ | NEQUAL
+RelOp = EQUALS | LTHANEQ | GTHANEQ | NEQUAL | LTHAN | GTHAN
 AddOp = PLUS | MINUS | OR | XOR
 MulOp = MULTIPLY | DIVIDE #| DIV | MOD | AND | SHL | SHR
 UnaryOp = NOT | PLUS | MINUS | AT | INHERITED
@@ -81,7 +94,7 @@ simpleExpression = Term + ZeroOrMore(AddOp + Term)
 
 expression << (simpleExpression + ZeroOrMore(RelOp + simpleExpression))
 assignment = expression + ASSIGN + expression
-expressionOrAssignment = ~END + (assignment | expression) # Currently this NotAny(END) is the only distinction between this code and the grammar cited above
+expressionOrAssignment = ~FINALLY + ~EXCEPT + ~END + (assignment | expression) # NotAny(END), NotAny(EXCEPT) are not included in the above grammar
 expressionOrRange = simpleExpression + ZeroOrMore(Literal('..') + simpleExpression)
 expressionOrRangeList = expressionOrRange + ZeroOrMore(COMMA + expressionOrRange)
 setLiteral << LBRACKET + expressionOrRangeList + RBRACKET
@@ -92,30 +105,58 @@ parameterExpression << (expression + ZeroOrMore(COLON + expression))
 block = Forward()
 statement = Forward()
 statementList = Forward()
-withStatement = Group(WITH + expressionList + DO) + statement
+withStatement = WITH + expressionList + DO + statement
 ifStatement = IF + expression + THEN + statement + Optional(ELSE + statement) 
 exceptionItem = ON + ident + COLON + qualifiedIdent + DO + statement + SEMICOLON
-tryStatement = TRY + statementList + (FINALLY + statementList | EXCEPT + ZeroOrMore(exceptionItem) + ELSE + statementList)
+tryStatement = TRY + statementList +  ((FINALLY + statementList) | (EXCEPT + (statementList | (ZeroOrMore(exceptionItem) + Optional(ELSE + statementList))))) + END
 statement << (block | withStatement | ifStatement | tryStatement | expressionOrAssignment )
 #statement << simpleStatement # | Label + COLON + simpleStatement
 statementList << OneOrMore(ZeroOrMore(statement) + SEMICOLON) # I also differ from the grammar here, where
 block << (BEGIN + Optional(statementList) + END)
 
+
+typedConstant = Forward()
+typedConstant = expression | (LPAREN + Optional( typedConstant + ZeroOrMore(COMMA + typedConstant) | ZeroOrMore(qualifiedIdent + COLON + typedConstant + SEMICOLON)) + RPAREN)
+constSection = CONST + OneOrMore(ident + Optional(COLON + _type) + EQUALS + typedConstant + SEMICOLON)
+classType = Forward()
+typeDecl = ident + EQUALS + _type + SEMICOLON
+typeSection = TYPE + OneOrMore(typeDecl)
 varSection = VAR + OneOrMore(Group(identList + COLON + _type + SEMICOLON))
-
-implementationDecl = varSection #| constSection | typeSection | ...
-
-fancyBlock = ZeroOrMore(implementationDecl) + block
+fieldDecl = identList + COLON + _type + SEMICOLON # Grammar seems to think semicolon here is optional, not really sure about that
+fieldSection = Optional(VAR) + OneOrMore(fieldDecl)
 
 methodReturnType = qualifiedIdent | QuotedString("'")
 parameterType = methodReturnType
 parameter = Optional(VAR | CONST) + identList + COLON + parameterType
-methodHeading = ((FUNCTION + qualifiedIdent + LPAREN + ZeroOrMore(parameter + ZeroOrMore(SEMICOLON + parameter)) + RPAREN + COLON + methodReturnType + SEMICOLON) |
-                (PROCEDURE + qualifiedIdent + LPAREN + ZeroOrMore(parameter + ZeroOrMore(SEMICOLON + parameter)) + RPAREN + SEMICOLON))
+methodHeading = Optional(CLASS) + (FUNCTION | PROCEDURE) + qualifiedIdent + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + SEMICOLON
 
-methodImplementation = methodHeading + fancyBlock + SEMICOLON
+_property = Optional(CLASS) + PROPERTY + ident + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + SEMICOLON
+methodOrProperty = methodHeading | _property
+visibilitySection = Optional(PRIVATE | PUBLIC | PROTECTED | PUBLISHED) + OneOrMore(fieldSection | methodOrProperty | constSection | typeSection)
+classType << Group(CLASS + LPAREN + qualifiedIdent + ZeroOrMore(COMMA + qualifiedIdent) + RPAREN +      # "The remainder is optional, but only if the base class is specified and 
+                ZeroOrMore(visibilitySection) + END)                                                    # lookahead shows that the next token is a semicolon" ~ NOT_IMPLEMENTED 
 
-grammar = OneOrMore(methodImplementation)
+_type << (classType | expressionOrRange)
+
+interfaceDecl = (typeSection | varSection | constSection | methodHeading)
+
+fancyBlock = Forward()
+methodImplementation = (methodHeading + fancyBlock + SEMICOLON)
+implementationDecl = (constSection | typeSection | varSection | methodImplementation)
+fancyBlock << (ZeroOrMore(implementationDecl) + block)
+
+usedUnit = qualifiedIdent | ident + IN + QuotedString("'",unquoteResults=False) #qualifiedIdent instead of ident here
+usesClause = (USES | CONTAINS) + OneOrMore(usedUnit + ZeroOrMore(COMMA + usedUnit)) + SEMICOLON
+
+interfaceSection = INTERFACE + Optional(usesClause) + ZeroOrMore(interfaceDecl)
+
+implementationSection = IMPLEMENTATION + Optional(usesClause) + ZeroOrMore(implementationDecl)
+
+initSection = END | block # | INITIALIZATION + statementList + FINALIZATION + statementList + END
+
+unit = UNIT + ident + SEMICOLON + interfaceSection + implementationSection + initSection + PERIOD
+
+grammar = unit
 grammar.ignore(dblSlashComment)
 grammar.ignore(braceComment)
 
@@ -129,4 +170,9 @@ def main(argv):
 
 if __name__ == "__main__":
     import pprint, sys
-    main(sys.argv[1])
+
+    if len(sys.argv)==1:
+        # run tests
+        pass
+    else:
+        main(sys.argv[1])
