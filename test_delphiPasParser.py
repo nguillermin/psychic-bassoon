@@ -38,6 +38,7 @@ class OutcomesTest(unittest.TestCase):
         self.assertTrue(statement.parseString("cPeriod:=FieldByName('Time_MP').AsString").asList()==['cPeriod',':=','FieldByName','(',"'Time_MP'",')','.','AsString'])
         self.assertTrue(statement.parseString("cPeriod.FieldByName('Time_MP').AsString;").asList()==['cPeriod','.','FieldByName','(',"'Time_MP'",')','.','AsString'])
         self.assertTrue(statement.parseString("temp := 'WHERE ID_NUMBER =''' + id + ''''").asList()==['temp', ':=', "'WHERE ID_NUMBER ='''", '+', 'id', '+', "''''"])
+        # print(statement.parseString("ItemGrid.Columns[2].FieldName := 'SALE_PRICE'"))
 
 
     def test_expression(self):
@@ -63,6 +64,11 @@ class OutcomesTest(unittest.TestCase):
         self.assertTrue(expressionList.parseString('Odin.SumQuery').asList()==['Odin', '.', 'SumQuery'])
         self.assertTrue(expressionList.parseString('Odin.SumQuery do').asList()==['Odin', '.', 'SumQuery'])
         self.assertTrue(expressionList.parseString('True,sortaTrue,MegaTrue.theReal()').asList()==['True','sortaTrue','MegaTrue','.','theReal','(',')'])
+
+
+    # def test_statement(self):
+    #     print(statement.parseString("""temp := FieldByName('Unit_Cost').AsFloat * 
+    #     (1 + FieldByName('DeptMarkup').AsFloat)"""))
 
 
     def test_withStatement(self):
@@ -150,9 +156,12 @@ class OutcomesTest(unittest.TestCase):
         #   end;""")) # Passes
 
 
-    # def test_statement(self):
-    #     print(statement.parseString("""temp := FieldByName('Unit_Cost').AsFloat * 
-    #     (1 + FieldByName('DeptMarkup').AsFloat)"""))
+    def test_caseStatement(self):
+        self.assertTrue(caseStatement.parseString("""case Key of
+    VK_RETURN:
+      PreUpdateList(nQty, false);
+  else
+  end;""").asList()==['case', 'Key', 'of', 'VK_RETURN', ':', 'PreUpdateList', '(', 'nQty', 'false', ')', ';', 'else', 'end'])
 
 
     def test_statementList(self):
@@ -277,11 +286,18 @@ class OutcomesTest(unittest.TestCase):
               sDate, eDate: TDateTime;
               temp, b: string;
             """).asList()==['var', ['sDate', 'eDate', ':', 'TDateTime', ';'], ['temp', 'b', ':', 'string', ';']])
+        self.assertTrue(varSection.parseString("""var
+  DateTo, DateFrom: TDateTime;
+  nBooks: array of TBookmark;""").asList()==['var', ['DateTo', 'DateFrom', ':', 'TDateTime', ';'], ['nBooks', ':', 'array', 'of', 'TBookmark', ';']])
 
 
     def test_parameter(self):
         self.assertTrue(parameter.parseString("const NewEntry: string").asList()==['const', 'NewEntry', ':', 'string'])
         self.assertTrue(parameter.parseString("var NewEntry, OldEntry : string").asList()==['var', 'NewEntry', 'OldEntry', ':', 'string'])
+
+
+    def test_parameterType(self):
+        self.assertTrue(parameterType.parseString("array of TBookmark; ").asList()==['array', 'of', 'TBookmark'])
 
 
     def test_methodHeading(self):
@@ -293,6 +309,10 @@ class OutcomesTest(unittest.TestCase):
         self.assertTrue(methodHeading.parseString("""procedure TableEditError(DataSet: TDataSet; E: EDatabaseError;
       var Action: TDataAction);""").asList()==['procedure', 'TableEditError', '(', 'DataSet', ':', 'TDataSet', ';', 'E', ':', 'EDatabaseError', ';', 'var', 'Action', ':', 'TDataAction', ')', ';'])
         self.assertTrue(methodHeading.parseString("""procedure TOdin.SchoolsCreate(Sender: TObject);begin end;""").asList()==['procedure', 'TOdin', '.', 'SchoolsCreate', '(', 'Sender', ':', 'TObject', ')', ';'])
+        self.assertTrue(methodHeading.parseString("""function NewWindowProc(WindowHandle: hWnd; TheMessage: LongInt; 
+            ParamW: LongInt; ParamL: LongInt): LongInt stdcall;""").asList()==['function', 'NewWindowProc', '(', 'WindowHandle', ':', 'hWnd', ';', 'TheMessage', ':', 'LongInt', ';', 
+        'ParamW', ':', 'LongInt', ';', 'ParamL', ':', 'LongInt', ')', ':', 'LongInt', 'stdcall', ';'])
+        self.assertTrue(methodHeading.parseString("function OpenUSBcr: integer; stdcall; external 'usbcr.dll';").asList()==['function', 'OpenUSBcr', ':', 'integer', ';', 'stdcall', ';', 'external', 'usbcr.dll', ';'])
 
 
     def test_methodImplementation(self):
@@ -676,6 +696,10 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
         'private', 'RetryCount', ':', 'integer', ';', 'public', 'LocalStock', ':', 'TTable', ';', 'end']])
 
 
+    def test_arrayType(self):
+        self.assertTrue(arrayType.parseString("array of TBookmark;").asList()==['array', 'of', 'TBookmark'])
+
+
     def test__type(self):
         self.assertTrue(classType.parseString("""class(TDataModule)
     Schools: TDatabase;
@@ -741,35 +765,8 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
         'LoginParams', ':', 'TStrings', ')', ';', 'procedure', 'ODBCConnectError', ';', 'private', 'RetryCount', ':', 'integer', ';', 'public', 'LocalStock', ':', 'TTable', ';', 'end'], ';'])
 
 
-#     def test_interfaceSection(self):
-#         print(interfaceSection.parseString("""interface
-
-# uses
-#   Windows,
-#   FireDAC.Comp.Client;
-
-# type
-#   TOdin = class(TDataModule)
-#     Schools: TDatabase;
-#     SQLTable5: TTable;
-
-#     procedure UpdateQueryUpdateError(DataSet: TDataSet; E: EDatabaseError;
-#       UpdateKind: TUpdateKind; var UpdateAction: TUpdateAction);
-#     procedure InitializeSchools;
-#   private
-#     RetryCount: integer;
-#   public
-#     LocalStock: TTable;
-#     lRef_dbo: boolean;
-#   end;
-
-# var
-#   bdeDir: string;
-
-# const
-#   stMySQL = 1;
-#   stMS2005 = 2;
-#   """)) # Passes
+    # def test_interfaceSection(self):
+    #     print(interfaceSection.parseString("""""")) # Fails
 
     
     # def test_implementationDecl(self):
