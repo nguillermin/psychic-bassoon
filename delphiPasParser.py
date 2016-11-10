@@ -31,7 +31,7 @@ LTHAN = Literal('<')
 GTHAN = Literal('>')
 LTHANEQ = Combine(Literal('<') + FollowedBy('=') + Literal('='))
 GTHANEQ = Combine(Literal('>') + FollowedBy('=') + Literal('='))
-NEQUAL = Literal('<>')
+NEQUAL = Literal('<>') + FollowedBy('>') + Literal('>')
 PLUS = Literal('+')
 MINUS = Literal('-')
 MULTIPLY = Literal('*')
@@ -142,7 +142,9 @@ methodHeading = Optional(CLASS) + (FUNCTION | PROCEDURE) + qualifiedIdent + Opti
 
 _property = Optional(CLASS) + PROPERTY + ident + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + SEMICOLON
 methodOrProperty = methodHeading | _property
+
 visibilitySection = Optional(PRIVATE | PUBLIC | PROTECTED | PUBLISHED) + OneOrMore(fieldSection | methodOrProperty | constSection | typeSection)
+
 classType << Group(CLASS + LPAREN + qualifiedIdent + ZeroOrMore(COMMA + qualifiedIdent) + RPAREN +      # "The remainder is optional, but only if the base class is specified and 
                 ZeroOrMore(visibilitySection) + END)                                                    # lookahead shows that the next token is a semicolon" ~ NOT_IMPLEMENTED 
 arrayType = ARRAY + Optional(LBRACKET + _type + ZeroOrMore(COMMA + _type) + RBRACKET) + OF + _type
@@ -165,7 +167,7 @@ implementationSection = IMPLEMENTATION + Optional(usesClause) + ZeroOrMore(imple
 
 initSection = END #| block # | INITIALIZATION + statementList + FINALIZATION + statementList + END
 
-titleAndInterface = UNIT + ident + SEMICOLON + interfaceSection
+titleAndInterface = UNIT + ident + SEMICOLON + interfaceSection # Temporary, while full parsing doesn't work reliably
 
 unit = UNIT + ident + SEMICOLON + interfaceSection + implementationSection + initSection + PERIOD
 
@@ -174,6 +176,7 @@ grammar.ignore(dblSlashComment)
 grammar.ignore(braceComment)
 
 PasParser = grammar
+
 
 def main(argv):
     with open(argv, 'r') as f:
