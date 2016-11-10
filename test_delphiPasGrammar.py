@@ -1,5 +1,5 @@
 import unittest
-from delphiPasParser import *
+from delphiPasGrammar import *
 
 
 class OutcomesTest(unittest.TestCase):
