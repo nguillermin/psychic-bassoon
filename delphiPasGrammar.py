@@ -73,7 +73,7 @@ braceComment = Literal('{') + SkipTo(Literal('}')) + Literal('}')
 ident = Word(alphanums + "_" + "#")
 identList = ident + ZeroOrMore(COMMA + ident)
 qualifiedIdent = ident + ZeroOrMore(PERIOD + ident)
-_type = Forward()
+types = Forward()
 retval = ident
 RelOp = EQUALS | LTHANEQ | GTHANEQ | NEQUAL | LTHAN | GTHAN
 AddOp = PLUS | MINUS | OR | XOR
@@ -124,13 +124,13 @@ block << (BEGIN + Optional(statementList) + END)
 
 
 typedConstant = Forward()
-typedConstant = expression | (LPAREN + Optional( typedConstant + ZeroOrMore(COMMA + typedConstant) | ZeroOrMore(qualifiedIdent + COLON + typedConstant + SEMICOLON)) + RPAREN)
-constSection = CONST + OneOrMore(ident + Optional(COLON + _type) + EQUALS + typedConstant + SEMICOLON)
+typedConstant = expression | LPAREN + RPAREN | LPAREN + (typedConstant + ZeroOrMore(COMMA + typedConstant) | qualifiedIdent + COLON + typedConstant + ZeroOrMore(SEMICOLON + qualifiedIdent + COLON + typedConstant)) + RPAREN
+constSection = CONST + OneOrMore(ident + Optional(COLON + types) + EQUALS + typedConstant + SEMICOLON)
 classType = Forward()
-typeDecl = ident + EQUALS + _type + SEMICOLON
+typeDecl = ident + EQUALS + types + SEMICOLON
 typeSection = TYPE + OneOrMore(typeDecl)
-varSection = VAR + OneOrMore(Group(identList + COLON + _type + SEMICOLON))
-fieldDecl = identList + COLON + _type + SEMICOLON # Grammar seems to think semicolon here is optional, not really sure about that
+varSection = VAR + OneOrMore(Group(identList + COLON + types + SEMICOLON))
+fieldDecl = identList + COLON + types + SEMICOLON # Grammar seems to think semicolon here is optional, not really sure about that
 fieldSection = Optional(VAR) + OneOrMore(fieldDecl)
 
 methodReturnType = qualifiedIdent | QuotedString("'")
@@ -140,16 +140,16 @@ parameter = Optional(VAR | CONST) + identList + COLON + parameterType
 directive = Optional(SEMICOLON) + ((MESSAGE + expression) | STDCALL | EXTERNAL + QuotedString("'"))
 methodHeading = Optional(CLASS) + (FUNCTION | PROCEDURE) + qualifiedIdent + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + ZeroOrMore(directive) + SEMICOLON + FollowedBy(~directive)
 
-_property = Optional(CLASS) + PROPERTY + ident + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + SEMICOLON
-methodOrProperty = methodHeading | _property
+properties = Optional(CLASS) + PROPERTY + ident + Optional(LPAREN + parameter + ZeroOrMore(SEMICOLON + parameter) + RPAREN) + Optional(COLON + methodReturnType) + SEMICOLON
+methodOrProperty = methodHeading | properties
 
 visibilitySection = Optional(PRIVATE | PUBLIC | PROTECTED | PUBLISHED) + OneOrMore(fieldSection | methodOrProperty | constSection | typeSection)
 
 classType << Group(CLASS + LPAREN + qualifiedIdent + ZeroOrMore(COMMA + qualifiedIdent) + RPAREN +      # "The remainder is optional, but only if the base class is specified and 
                 ZeroOrMore(visibilitySection) + END)                                                    # lookahead shows that the next token is a semicolon" ~ NOT_IMPLEMENTED 
-arrayType = ARRAY + Optional(LBRACKET + _type + ZeroOrMore(COMMA + _type) + RBRACKET) + OF + _type
+arrayType = ARRAY + Optional(LBRACKET + types + ZeroOrMore(COMMA + types) + RBRACKET) + OF + types
 
-_type << (classType | arrayType | expressionOrRange)
+types << (classType | arrayType | expressionOrRange)
 
 interfaceDecl = (typeSection | varSection | constSection | methodHeading)
 
