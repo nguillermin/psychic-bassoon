@@ -682,36 +682,25 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
   #   LocalStock: TTable;"""))
 
 
+    def test_types(self):
+        self.assertTrue(types.parseString("array of TBookmark").asList()==['array', 'of', 'TBookmark'])
+        self.assertTrue(types.parseString("Array [1..KOffArrayLen] Of Integer").asList()==['array', '[', '1', '..', 'KOffArrayLen', ']', 'of', 'Integer'])
+
+
     def test_classType(self):
         self.assertTrue(classType.parseString("""class(TDataModule)
     Schools: TDatabase;
-    Addresses: TDataSource;
     procedure OdinSQLLogin(Database: TDatabase; LoginParams: TStrings);
-    procedure ODBCConnectError;
   private
     RetryCount: integer;
   public
-    LocalStock: TTable; end""").asList()==[['class', '(', 'TDataModule', ')', 'Schools', ':', 'TDatabase', ';', 'Addresses', ':', 'TDataSource', ';', 
-        'procedure', 'OdinSQLLogin', '(', 'Database', ':', 'TDatabase', ';', 'LoginParams', ':', 'TStrings', ')', ';', 'procedure', 'ODBCConnectError', ';', 
-        'private', 'RetryCount', ':', 'integer', ';', 'public', 'LocalStock', ':', 'TTable', ';', 'end']])
+    LocalStock: TTable; end""").asList()==[['class', '(', 'TDataModule', ')', 'Schools', ':', 'TDatabase', ';',
+        'procedure', 'OdinSQLLogin', '(', 'Database', ':', 'TDatabase', ';', 'LoginParams', ':', 'TStrings', ')',
+        ';', 'private', 'RetryCount', ':', 'integer', ';', 'public', 'LocalStock', ':', 'TTable', ';', 'end']])
 
 
     def test_arrayType(self):
         self.assertTrue(arrayType.parseString("array of TBookmark;").asList()==['array', 'of', 'TBookmark'])
-
-
-    def test__type(self):
-        self.assertTrue(classType.parseString("""class(TDataModule)
-    Schools: TDatabase;
-    Addresses: TDataSource;
-    procedure OdinSQLLogin(Database: TDatabase; LoginParams: TStrings);
-    procedure ODBCConnectError;
-  private
-    RetryCount: integer;
-  public
-    LocalStock: TTable; end""").asList()==[['class', '(', 'TDataModule', ')', 'Schools', ':', 'TDatabase', ';', 'Addresses', ':', 'TDataSource', ';', 'procedure', 
-    'OdinSQLLogin', '(', 'Database', ':', 'TDatabase', ';', 'LoginParams', ':', 'TStrings', ')', ';', 'procedure', 'ODBCConnectError', ';', 'private', 
-    'RetryCount', ':', 'integer', ';', 'public', 'LocalStock', ':', 'TTable', ';', 'end']])
 
 
     def test_typeDecl(self):
@@ -748,6 +737,9 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
         self.assertTrue(constSection.parseString("""const
   stUnknown = 0;
   stMySQL = 1;""").asList()==['const', 'stUnknown', '=', '0', ';', 'stMySQL', '=', '1', ';'])
+        print(constSection.parseString("""const
+            KOffArray: Array [1..KOffArrayLen] Of Integer = (2, 3, 5, 7);
+            """))
 
 
     def test_interfaceDecl(self):
