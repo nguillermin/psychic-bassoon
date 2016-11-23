@@ -38,7 +38,7 @@ class OutcomesTest(unittest.TestCase):
         self.assertTrue(statement.parseString("cPeriod:=FieldByName('Time_MP').AsString").asList()==['cPeriod',':=','FieldByName','(',"'Time_MP'",')','.','AsString'])
         self.assertTrue(statement.parseString("cPeriod.FieldByName('Time_MP').AsString;").asList()==['cPeriod','.','FieldByName','(',"'Time_MP'",')','.','AsString'])
         self.assertTrue(statement.parseString("temp := 'WHERE ID_NUMBER =''' + id + ''''").asList()==['temp', ':=', "'WHERE ID_NUMBER ='''", '+', 'id', '+', "''''"])
-        # print(statement.parseString("ItemGrid.Columns[2].FieldName := 'SALE_PRICE'"))
+        self.assertTrue(statement.parseString("MessageDlg(tStr = ' is not a valid integer    ',mtError,[mbOk],0);").asList()==['MessageDlg', '(', 'tStr', '=', "' is not a valid integer    '", 'mtError', '[', 'mbOk', ']', '0', ')'])
 
 
     def test_expression(self):
@@ -48,6 +48,10 @@ class OutcomesTest(unittest.TestCase):
         self.assertTrue(expression.parseString("Odin.UseSQL").asList()==['Odin', '.', 'UseSQL'])
         self.assertTrue(expression.parseString("2").asList()==['2'])
         self.assertTrue(expression.parseString("""FieldByName('DeptMarkup').AsFloat >= 0""").asList()==['FieldByName', '(', "'DeptMarkup'", ')', '.', 'AsFloat', '>=', '0'])
+
+
+    def test_typedConstant(self):
+        self.assertTrue(typedConstant.parseString("(2, 3, 5, 7)").asList()==['(', '2', '3', '5', '7', ')'])
 
 
     def test_assignment(self):
@@ -135,12 +139,15 @@ class OutcomesTest(unittest.TestCase):
         #         (1 + FieldByName('DeptMarkup').AsFloat);""")) # Passes
 
 
-    # def test_tryStatement(self):
-        # print(tryStatement.parseString("""try
-        #     OdinSQL.Connected := True;
-        #     except
-        #     ODBCConnectError;
-        #     end""")) # Passes
+    def test_tryStatement(self):
+        print(tryStatement.parseString("""try
+             OdinSQL.Connected := True;
+             except
+               on EConvertError do begin
+                 result := 0;
+                 MessageDlg(tStr + 'is not a valid integer', mtError, [mbOk], 0');
+                 end;
+             end""")) # Fails
         # print(tryStatement.parseString("""try
         #     if SysReg.KeyExists(a) then
         #     begin
@@ -195,65 +202,6 @@ class OutcomesTest(unittest.TestCase):
               end;
             end
             """).asList()==['begin','begin','end',';','end'])
-
-       #  print(block.parseString("""
-       #      begin
-       #      result := false;
-       #      if Odin.UseSQL or Odin.SQLFields then
-       #        ActiveField := 'LACTIVE'
-       #      else
-       #        ActiveField := 'ACTIVE';
-
-       #      with Odin.LookupQuery do
-       #      begin
-       #        Close;;
-       #        SQL.Clear;
-       #        if Odin.UseSQL then
-       #        begin
-     #          SQL.Add('SELECT DISTINCT LACTIVE');
-       #          SQL.Add('FROM student');
-       #          ConnectionName := 'OdinSQL';
-       #        end
-       #        else
-       #        begin
-       #          SQL.Add('SELECT DISTINCT ":Schools:STUDENT.dbf"."ACTIVE"');
-       #          SQL.Add('FROM ":Schools:STUDENT.DBF"');
-       #          ConnectionName := 'Schools';
-       #        end;
-       #        temp := 'WHERE ID_NUMBER = ''' + id + '''';
-       #        SQL.Add(temp);
-       #        if School > '' then
-       #        begin
-       #          temp := 'AND SCHOOL = ''' + School + '''';
-       #          SQL.Add(temp);
-       #        end;
-       #        Prepare;
-       #        try
-       #          Open;
-       #        except
-       #          MessageDlg('Open Active Query error: ' + id + ' ' + School, mtError,
-       #            [mbIgnore], 0);
-       #        end;
-
-       #        if Odin.UseSQL or Odin.SQLFields then
-       #        begin
-       #          if (FieldByName('LACTIVE').AsInteger = 1) then
-       #            result := true
-       #          else
-       #            result := false;
-       #        end
-
-       #        else
-       #        begin
-       #          if FieldByName('ACTIVE').AsBoolean then
-       #            result := true;
-       #          else
-       #            result := false;
-       #        end;
-       #        Close;
-       #      end;
-       #    end
-       #   """))
 
 
 #     def test_fancyBlock(self):
@@ -344,312 +292,6 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
 'if', 'RetryCount', '<=', '3', 'then', 'begin', 'if', 'not', 'OdinSQL', '.', 'Connected', 'then', 'begin', 'WriteMessage', '(', "'SQL reconnect'", ')', ';', 
 'OdinSQL', '.', 'Connected', ':=', 'True', ';', 'end', ';', 'end', 'else', 'begin', 'response', ':=', 'MessageDlg', '(', "'Unable to connect to ODBC  '", 'mtError', '[', 'mbCancel', 'mbRetry', ']', 
 '0', ')', ';', 'end', ';', 'end', ';'])
-#         print(methodImplementation.parseString("""procedure TOdin.InitializeSchools;
-# var
-#   List: TStringList;
-#   NewPath, DriverName, cAlias: string;
-#   Driver: integer;
-#   lSQLAction, lSQLInventry, lSQLtuition, lSQLvendor: boolean;
-#   aUser, bUser, pw: string;
-# begin
-#   SQLFields := False;
-#   lSQLAction := False;
-#   lSQLInventry := False;
-#   lSQLvendor := False;
-#   lSQLdb := False;
-#   lSQLtuition := False;
-#   GetHomeDirectory(HomeDirectory);
-
-#   SchoolsSession.PrivateDir := HomeDirectory;
-#   SchoolsSession.NetFileDir := HomeDirectory;
-
-#   SchoolsSession.Active := True;
-#   if not SchoolsSession.IsAlias('Schools') then
-#   begin
-#     ShowMessage('Alias Schools does not exist');
-#     Application.Terminate;
-#   end;
-
-#   Schools.Close;
-
-#   cAlias := Schools.AliasName;
-#   SchoolsSession.GetAliasParams(cAlias, Schools.Params);
-
-#   if FindCmdLineSwitch('path', ['/', '-'], True) then
-#   begin
-#     NewPath := GetCmdLinePath;
-#     bdeDir := NewPath + '\';
-#   end
-#   else
-#     bdeDir := Schools.Params.Values['Path'] + '\';
-
-#   if FindCmdLineSwitch('archive', ['/', '-'], True) then
-#   begin
-#     Schools.ReadOnly := True;
-#     TransactTable.ReadOnly := True;
-#     TransferTable.ReadOnly := True;
-#     StoreTable.ReadOnly := True;
-#     InventoryTable.ReadOnly := True;
-#     StudentTable.ReadOnly := True;
-#   end;
-
-#   Driver := GetDriver(DriverName, dbReference, lFullSQL, WebStock, lRef_dbo,
-#     ServerType);
-#   if CheckSQL('Action') then
-#     lSQLAction := True;
-#   if CheckSQL('db') then
-#     lSQLdb := True;
-#   if CheckSQL('Inventry') then
-#     lSQLInventry := True;
-#   if CheckSQL('Vendor') then
-#     lSQLvendor := True;
-#   if CheckSQL('Tuition') then
-#     lSQLtuition := True;
-
-#   LocalTranTable.TableName := HomeDirectory + '\LoclTran.dbf';
-#   LocalTransfersTable.TableName := HomeDirectory + '\LoclTransfers.dbf';
-#   BankBatchTable.TableName := HomeDirectory + '\BankBatch.dbf';
-#   LocalRemotesTable.TableName := HomeDirectory + '\LoclRemotes.dbf';
-#   TemptranTable.TableName := HomeDirectory + '\Temptran.dbf';
-#   LocalWebTransfers.TableName := HomeDirectory + '\LocalWebTransfers.dbf';
-
-#   if NewPath > '' then
-#   begin
-#     Schools.Params.Values['Path'] := NewPath;
-#     if FindCmdLineSwitch('debug', ['/', '-'], True) then
-#       ShowMessage('Switching path to ' + NewPath);
-#   end;
-
-#   if SchoolsSession.IsAlias('OdinSQL') then
-#   begin
-#     Schools.Open;
-#     with Odin do
-#     begin
-#       TranQuerySQL.DatabaseName := 'OdinSQL';
-#       TransactTable.DatabaseName := 'OdinSQL';
-#       TransactTable.TableType := ttDefault;
-#       TransactTable.TableName := 'Transact';
-
-#       TransferQuery.DatabaseName := 'OdinSQL';
-#       TransferTable.DatabaseName := 'OdinSQL';
-#       TransferTable.TableType := ttDefault;
-#       TransferTable.TableName := 'Transfer';
-
-#       StudQuerySQL.DatabaseName := 'OdinSQL';
-#       StudentTable.DatabaseName := 'OdinSQL';
-#       StudentTable.TableType := ttDefault;
-#       StudentTable.TableName := 'Student';
-
-#       CustomRestrictTable.DatabaseName := 'OdinSQL';
-#       CustomRestrictTable.TableType := ttDefault;
-#       CustomRestrictTable.TableName := 'cstmrsct';
-
-#       if lSQLAction then
-#       begin
-#         ActionQuery.DatabaseName := 'OdinSQL';
-#         ActionTable.DatabaseName := 'OdinSQL';
-#         ActionTable.TableType := ttDefault;
-#         ActionTable.TableName := 'Action';
-#         LostQuery.DatabaseName := 'OdinSQL';
-#       end;
-
-#       if lSQLInventry then
-#       begin
-#         InventoryTable.DatabaseName := 'OdinSQL';
-#         InventoryTable.TableType := ttDefault;
-#         InventoryTable.TableName := 'inventry';
-#         InvQuerySQL.DatabaseName := 'OdinSQL';
-#       end;
-
-#       if lSQLvendor then
-#       begin
-#         VendorTable.DatabaseName := 'OdinSQL';
-#         VendorTable.TableType := ttDefault;
-#         VendorTable.TableName := 'vendor';
-#         VendorSQL.DatabaseName := 'OdinSQL';
-#       end;
-
-#       if lSQLtuition then
-#       begin
-#         TuitionTable.DatabaseName := 'OdinSQL';
-#         TuitionTable.TableName := 'tuition';
-#         TuitionTable.TableType := ttDefault;
-#         TuitionSetupTable.DatabaseName := 'OdinSQL';
-#         TuitionSetupTable.IndexName := 'class';
-#         TuitionSetupTable.TableName := 'tuitionsetup';
-#         TuitionSetupTable.TableType := ttDefault;
-#         TuitionPlansTable.DatabaseName := 'OdinSQL';
-#         TuitionPlansTable.TableName := 'tuitnpayplan';
-#         TuitionPlansTable.TableType := ttDefault;
-#         TuitnPayTable.DatabaseName := 'OdinSQL';
-#         TuitnPayTable.TableName := 'tuitnpay';
-#         TuitnPayTable.TableType := ttDefault;
-#         TuitnPaySQL.DatabaseName := 'OdinSQL';
-#       end;
-
-#       if lSQLdb then
-#       begin
-#         RightsTable.TableType := ttDefault;
-#         RightsTable.DatabaseName := 'OdinSQL';
-#         RightsTable.TableName := 'rights';
-#         UsersTable.TableType := ttDefault;
-#         UsersTable.DatabaseName := 'OdinSQL';
-#         UsersTable.TableName := 'users';
-#         WebtranTable.TableType := ttDefault;
-#         WebtranTable.DatabaseName := 'OdinSQL';
-#         WebtranTable.TableName := 'webtran';
-#       end;
-
-#       OdinSQL.Connected := True;
-#       UseSQL := True;
-
-#       UseDBX := False;
-#       UseODBC := False;
-#     end;
-#   end
-
-#   else if Driver = ODBC then
-#   begin
-#     OdinSQL.AliasName := DriverName;
-#     Schools.Open;
-#     TranQuerySQL.DatabaseName := 'OdinSQL';
-#     TransactTable.DatabaseName := 'OdinSQL';
-#     TransactTable.TableType := ttDefault;
-#     if dbReference > '' then
-#       TransactTable.TableName := dbReference + '.transact'
-#     else
-#       TransactTable.TableName := 'transact';
-
-#     TransferQuery.DatabaseName := 'OdinSQL';
-#     TransferTable.DatabaseName := 'OdinSQL';
-#     TransferTable.TableType := ttDefault;
-#     if dbReference > '' then
-#       TransferTable.TableName := dbReference + '.transfer'
-#     else
-#       TransferTable.TableName := 'transfer';
-
-#     StudQuerySQL.DatabaseName := 'OdinSQL';
-#     StudLookupSQL.DatabaseName := 'OdinSQL';
-#     StudentTable.DatabaseName := 'OdinSQL';
-#     StudentTable.TableType := ttDefault;
-
-#     CustomRestrictTable.DatabaseName := 'OdinSQL';
-#     CustomRestrictTable.TableType := ttDefault;
-#     CustomRestrictTable.TableName := 'cstmrsct';
-
-#     if lSQLAction then
-#     begin
-#       ActionQuery.DatabaseName := 'OdinSQL';
-#       ActionTable.DatabaseName := 'OdinSQL';
-#       ActionTable.TableType := ttDefault;
-#       ActionTable.TableName := 'action';
-#       LostQuery.DatabaseName := 'OdinSQL';
-#     end;
-
-#     if lSQLInventry then
-#     begin
-#       InventoryTable.DatabaseName := 'OdinSQL';
-#       InventoryTable.TableType := ttDefault;
-#       InventoryTable.TableName := 'inventry';
-#       InvQuerySQL.DatabaseName := 'OdinSQL';
-#     end;
-
-#     if lSQLvendor then
-#     begin
-#       VendorTable.DatabaseName := 'OdinSQL';
-#       VendorTable.TableType := ttDefault;
-#       VendorTable.TableName := 'vendor';
-#       VendorSQL.DatabaseName := 'OdinSQL';
-#     end;
-#     if lSQLtuition then
-#     begin
-#       TuitionTable.DatabaseName := 'OdinSQL';
-#       TuitionTable.TableName := 'tuition';
-#       TuitionTable.TableType := ttDefault;
-#       TuitionSetupTable.DatabaseName := 'OdinSQL';
-#       TuitionSetupTable.TableName := 'tuitionsetup';
-#       TuitionSetupTable.TableType := ttDefault;
-#       TuitionSetupTable.IndexName := 'class';
-#       TuitionPlansTable.DatabaseName := 'OdinSQL';
-#       TuitionPlansTable.TableName := 'tuitnpayplan';
-#       TuitionPlansTable.TableType := ttDefault;
-#       TuitnPayTable.DatabaseName := 'OdinSQL';
-#       TuitnPayTable.TableName := 'tuitnpay';
-#       TuitnPayTable.TableType := ttDefault;
-#       TuitnPaySQL.DatabaseName := 'OdinSQL';
-#     end;
-
-#     if lSQLdb then
-#     begin
-#       RightsTable.TableType := ttDefault;
-#       RightsTable.DatabaseName := 'OdinSQL';
-#       RightsTable.TableName := 'rights';
-#       UsersTable.TableType := ttDefault;
-#       UsersTable.DatabaseName := 'OdinSQL';
-#       UsersTable.TableName := 'users';
-#       WebtranTable.TableType := ttDefault;
-#       WebtranTable.DatabaseName := 'OdinSQL';
-#       WebtranTable.TableName := 'webtran';
-#     end;
-
-#     if dbReference > '' then
-#       StudentTable.TableName := dbReference + '.student'
-#     else if (ServerType = stMS2005) and not lRef_dbo then
-#       StudentTable.TableName := 'student'
-#     else if (ServerType = stMS2005) then
-#       StudentTable.TableName := 'dbo.student'
-#     else
-#       StudentTable.TableName := 'student';
-#     Students.DataSet := StudentTable;
-
-#     try
-#       OdinSQL.Connected := True;
-#     except
-#       ODBCConnectError;
-#     end;
-#     UseODBC := True;
-#     UseSQL := True;
-#     UseDBX := False;
-#   end
-
-#   else if Driver = DBX then
-#   begin
-#     OdinSQL.AliasName := 'MyKidsODBC';
-#     Schools.Open;
-#   end
-
-#   else
-#   begin
-#     if NewPath > '' then
-#     begin
-#       Schools.Params.Values['Path'] := NewPath;
-#     end;
-
-#     TranQuerySQL.DatabaseName := 'Schools';
-#     TransactTable.DatabaseName := 'Schools';
-#     TransactTable.TableType := ttDBase;
-#     TransactTable.TableName := 'Transact.dbf';
-
-#     TransferQuery.DatabaseName := 'Schools';
-#     TransferTable.DatabaseName := 'Schools';
-#     TransferTable.TableType := ttDBase;
-#     TransferTable.TableName := 'Transfer.dbf';
-
-#     StudQuerySQL.DatabaseName := 'Schools';
-#     StudentTable.DatabaseName := 'Schools';
-#     StudentTable.TableType := ttDBase;
-#     StudentTable.TableName := 'Student.dbf';
-#     Students.DataSet := StudentTable;
-
-#     UseSQL := False;
-#     UseDBX := False;
-
-#     Schools.Open;
-#   end;
-
-#   Schools.Connected := True;
-#   SchoolsSession.NetFileDir := bdeDir;
-# end;"""))
 
 
     def test_usesClause(self):
@@ -737,9 +379,9 @@ end;""").asList()==['procedure', 'TOdin', '.', 'ODBCConnectError', ';', 'var', [
         self.assertTrue(constSection.parseString("""const
   stUnknown = 0;
   stMySQL = 1;""").asList()==['const', 'stUnknown', '=', '0', ';', 'stMySQL', '=', '1', ';'])
-        print(constSection.parseString("""const
+        self.assertTrue(constSection.parseString("""const
             KOffArray: Array [1..KOffArrayLen] Of Integer = (2, 3, 5, 7);
-            """))
+            """).asList()==['const', 'KOffArray', ':', 'array', '[', '1', '..', 'KOffArrayLen', ']', 'of', 'Integer', '=', '(', '2', '3', '5', '7', ')', ';'])
 
 
     def test_interfaceDecl(self):

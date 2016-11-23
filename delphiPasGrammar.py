@@ -124,7 +124,10 @@ block << (BEGIN + Optional(statementList) + END)
 
 
 typedConstant = Forward()
-typedConstant = expression | LPAREN + RPAREN | LPAREN + (typedConstant + ZeroOrMore(COMMA + typedConstant) | qualifiedIdent + COLON + typedConstant + ZeroOrMore(SEMICOLON + qualifiedIdent + COLON + typedConstant)) + RPAREN
+typedConstant << ((LPAREN + RPAREN) | 
+                    (LPAREN + (typedConstant + ZeroOrMore(COMMA + typedConstant)) + RPAREN) | 
+                    (LPAREN + qualifiedIdent + COLON + typedConstant + ZeroOrMore(SEMICOLON + qualifiedIdent + COLON + typedConstant) + RPAREN) | 
+                    expression)
 constSection = CONST + OneOrMore(ident + Optional(COLON + types) + EQUALS + typedConstant + SEMICOLON)
 classType = Forward()
 typeDecl = ident + EQUALS + types + SEMICOLON
